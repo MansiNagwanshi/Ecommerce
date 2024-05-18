@@ -118,8 +118,8 @@ const Navbar: React.FC<NavbarProps> = ({ cartItemCount }) => {
                 handler: async function (response: any) {
                 },
                 prefill: {
-                    email: 'wasiforwork@gmail.com',
-                    contact: '7723980244'
+                    email: 'mansinagwanshi666@gmail.com',
+                    contact: '7225981773'
                 },
                 notes: {
                     address: "Razorpay Corporate Office"
