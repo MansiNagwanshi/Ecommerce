@@ -1,8 +1,13 @@
 "use client"
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { Button, Modal } from 'antd';
+import { Modal } from 'antd';
 
+declare global {
+    interface Window {
+        Razorpay: any;
+    }
+}
 interface NavbarProps {
     cartItemCount: number;
 }
@@ -12,6 +17,26 @@ interface ModalData {
     price: string;
     image: string;
 
+}
+
+interface resultData {
+    message: string;
+    order: {
+        id: string;
+        entity: string;
+        amount: number;
+        amount_paid: number;
+        amount_due: number;
+        currency: string;
+        receipt: string;
+        offer_id: string;
+        status: string;
+        attempts: number;
+        notes: any[];
+        created_at: number;
+        _id: string;
+        __v: number;
+    }
 }
 
 const Navbar: React.FC<NavbarProps> = ({ cartItemCount }) => {
@@ -29,19 +54,91 @@ const Navbar: React.FC<NavbarProps> = ({ cartItemCount }) => {
                 setModalData(data.cartItems);
                 setCartItemNumber(data.cartItems.length);
                 let total = 0;
-            for(let i = 0; i < data.cartItems.length; i++){
-                total += Number(data.cartItems[i].price)
-            }
-            setTotalAmount(total);
+                for (let i = 0; i < data.cartItems.length; i++) {
+                    total += Number(data.cartItems[i].price)
+                }
+                setTotalAmount(total);
                 setOpen(true);
             })
             .catch((err) => {
-                console.log("error Getting The Products-->", err);
             });
     };
+    const loadScript = (src: any) => {
+        return new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = () => {
+                resolve(true);
+            };
+            script.onerror = () => {
+                resolve(false);
+            };
+            document.body.appendChild(script);
+        });
+    };
+
+    async function handleClick() {
+        let orderId = "OD" + Math.floor(Math.random() * Math.floor(Math.random() * Date.now()));
+
+        const res = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
+        if (!res) {
+            alert('Razorpay SDK failed to load. Are you online?');
+            return;
+        }
+        let paymentRes = {
+            orderid: orderId,
+            totalAmount: totalAmount.toString(),
+            currency: "INR",
+            receipt: "receipt#1",
+            payment_capture: 1
+        }
+
+        let response = await fetch(`${process.env.API_URL}/api/order/create-order`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(paymentRes)
+        });
+
+        let result: resultData = await response.json();
+
+        if (!result.order) {
+            alert('Server error. Are you online?');
+            return;
+        } else {
+
+            let options = {
+                key: process.env.RAZORPAY_KEY,
+                currency: result.order.currency,
+                amount: result.order.amount,
+                order_id: result.order.id,
+                name: 'TE',
+                description: 'Thank you for shopping with us.',
+                handler: async function (response: any) {
+                },
+                prefill: {
+                    email: 'wasiforwork@gmail.com',
+                    contact: '7723980244'
+                },
+                notes: {
+                    address: "Razorpay Corporate Office"
+                },
+                theme: {
+                    color: '#1f5215'
+                }
+            };
+
+
+            let paymentObject = new window.Razorpay(options);
+            paymentObject.open();
+        }
+
+    }
 
     const handleOk = () => {
         setConfirmLoading(true);
+        handleClick()
         setTimeout(() => {
             setOpen(false);
             setConfirmLoading(false);
@@ -49,7 +146,6 @@ const Navbar: React.FC<NavbarProps> = ({ cartItemCount }) => {
     };
 
     const handleCancel = () => {
-        console.log('Clicked cancel button');
         setOpen(false);
     };
 

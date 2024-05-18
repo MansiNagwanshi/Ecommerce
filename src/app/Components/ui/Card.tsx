@@ -30,7 +30,6 @@ export const Card: React.FC<CardProps> = ({ title, description, price, image }) 
         })
         const data = await response.json();
         notify();
-        console.log("data from frontend-->", data);
     }
 
     return (
